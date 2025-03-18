@@ -62,7 +62,7 @@ jobs:
               "title": "🚀 Nova Versão Publicada!",
               "description": "A nova versão da extensão **Flex Theme** já está disponível!",
               "url": "https://marketplace.visualstudio.com/items?itemName=lucaskawatoko.hyperdark",
-              "color": 16711680,
+              "color": 000000,
               "fields": [
                 {
                   "name": "📥 Instale no VS Code",
