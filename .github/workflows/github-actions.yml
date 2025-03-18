@@ -1,0 +1,76 @@
+name: Deploy Extension to Marketplace
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'latest'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install VSCE
+        run: npm install -g vsce semver auto-changelog
+
+      - name: Check Version
+        run: |
+          PREV_VERSION=$(git describe --tags --abbrev=0 || echo "0.0.0")
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          if [ "$(semver compare $NEW_VERSION $PREV_VERSION)" -le "0" ]; then
+            echo "❌ ERRO: A nova versão ($NEW_VERSION) deve ser maior que a anterior ($PREV_VERSION)"
+            exit 1
+          fi
+
+      - name: Generate Changelog
+        run: auto-changelog -p
+
+      - name: Publish Extension
+        run: vsce publish --pat ${{ secrets.VSCE_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "Release v${{ github.run_number }}"
+          body: "Confira as mudanças nesta versão 🚀"
+          draft: false
+          prerelease: false
+
+      - name: Send Discord Webhook
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{
+            "content": "<@&1130581176290123866> 🚀 **Nova Versão Publicada!**",
+            "embeds": [{
+              "title": "🚀 Nova Versão Publicada!",
+              "description": "A nova versão da extensão **Flex Theme** já está disponível!",
+              "url": "https://marketplace.visualstudio.com/items?itemName=lucaskawatoko.hyperdark",
+              "color": 16711680,
+              "fields": [
+                {
+                  "name": "📥 Instale no VS Code",
+                  "value": "`lucaskawatoko.hyperdark`"
+                }
+              ],
+              "footer": {
+                "text": "Publicado automaticamente por GitHub Actions"
+              }
+            }]
+          }' ${{ secrets.WEBHOOK_DISCORD }}

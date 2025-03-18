@@ -1,0 +1,147 @@
+{
+  "name": "hyperdark",
+  "displayName": "HyperDark",
+  "description": "A VS Code extension that enables a pure black theme with high-contrast colors.",
+  "version": "0.0.4",
+  "publisher": "lucaskawatoko",
+  "license": "MIT",
+  "author": {
+    "name": "Lucas Kawatoko",
+    "email": "lucaskawatoko@gmail.com"
+  },
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucaskawatoko/HyperDark.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lucaskawatoko/HyperDark/issues"
+  },
+  "homepage": "https://github.com/lucaskawatoko/HyperDark",
+  "categories": [
+    "Themes",
+    "Visualization"
+  ],
+  "keywords": [
+    "theme",
+    "dark",
+    "light",
+    "pastel",
+    "high-contrast",
+    "customization",
+    "vscode"
+  ],
+  "icon": "imgs/Logo_extensao_Hyper_Dark.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "HyperDark Settings",
+      "properties": {
+        "hyperdark.themeEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ativa ou desativa o tema HyperDark.",
+          "category": "Theme",
+          "order": 1
+        },
+        "hyperdark.selectedTheme": {
+          "type": "string",
+          "default": "dark",
+          "enum": ["dark", "light", "pastel"],
+          "enumDescriptions": [
+            "Tema escuro",
+            "Tema claro",
+            "Tema pastel"
+          ],
+          "description": "Escolha o tema do HyperDark.",
+          "category": "Theme",
+          "order": 2
+        },
+        "hyperdark.showClock": {
+          "type": "boolean",
+          "default": true,
+          "description": "Exibe o relógio na Status Bar do VS Code.",
+          "category": "Clock",
+          "order": 5
+        },
+        "hyperdark.statusBarText": {
+          "type": "string",
+          "default": "HyperDark",
+          "description": "Texto exibido na Status Bar.",
+          "category": "Status Bar",
+          "order": 3
+        },
+        "hyperdark.statusBarTooltip": {
+          "type": "string",
+          "default": "Clique para ativar o tema HyperDark",
+          "description": "Texto exibido ao passar o mouse sobre a Status Bar.",
+          "category": "Status Bar",
+          "order": 4
+        },
+        "hyperdark.statusBarEmoji": {
+          "type": "string",
+          "default": "$(paintcan)",
+          "enum": [
+            "$(paintcan)",
+            "$(flame)",
+            "$(zap)",
+            "$(rocket)",
+            "$(check)",
+            "$(eye)",
+            "$(heart)",
+            "$(gear)",
+            "$(smiley)",
+            "$(star)",
+            "$(bug)"
+          ],
+          "enumDescriptions": [
+            "Lata de tinta",
+            "Fogo",
+            "Raio",
+            "Foguete",
+            "Check",
+            "Olho",
+            "Coração",
+            "Engrenagem",
+            "Emoji sorrindo",
+            "Estrela",
+            "Bug"
+          ],
+          "description": "Ícone da Status Bar (selecione um ícone do VS Code ou um emoji).",
+          "category": "Status Bar",
+          "order": 6
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "hyperdark.openSettings",
+        "title": "Open HyperDark Settings"
+      },
+      {
+        "command": "hyperdark.toggleTheme",
+        "title": "Toggle HyperDark Theme"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test",
+    "watch:tsc": "tsc --watch",
+    "watch:esbuild": "esbuild src/extension.js --bundle --outfile=dist/extension.js --watch"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "eslint": "^9.21.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
