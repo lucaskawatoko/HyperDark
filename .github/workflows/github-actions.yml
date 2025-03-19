@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
 
 permissions:
   contents: write
@@ -19,18 +16,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Verificar mudanças no package.json
+        id: check_changes
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -q "package.json"; then
+            echo "✅ package.json foi alterado, continuando o deploy..."
+            echo "::set-output name=should_deploy::true"
+          else
+            echo "⚠️ Nenhuma alteração em package.json. Deploy não necessário."
+            echo "::set-output name=should_deploy::false"
+          fi
+
+      - name: Finalizar workflow se não houver mudanças
+        if: steps.check_changes.outputs.should_deploy == 'false'
+        run: |
+          echo "✅ Nenhuma mudança detectada no package.json. Encerrando workflow."
+          exit 0
+
       - name: Set up Node.js
+        if: steps.check_changes.outputs.should_deploy == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 'latest'
 
       - name: Install dependencies
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: npm install
 
       - name: Install VSCE
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: npm install -g vsce semver auto-changelog
 
       - name: Check Version
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: |
           PREV_VERSION=$(git describe --tags --abbrev=0 || echo "0.0.0")
           NEW_VERSION=$(node -p "require('./package.json').version")
@@ -40,12 +58,15 @@ jobs:
           fi
 
       - name: Generate Changelog
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: auto-changelog -p
 
       - name: Publish Extension
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: vsce publish --pat ${{ secrets.VSCE_TOKEN }}
 
       - name: Create GitHub Release
+        if: steps.check_changes.outputs.should_deploy == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
@@ -54,13 +75,18 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Get Version from package.json
+        id: get_version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
       - name: Send Discord Webhook
+        if: steps.check_changes.outputs.should_deploy == 'true'
         run: |
           curl -X POST -H "Content-Type: application/json" -d '{
-            "content": "<@&1130581176290123866> 🚀 **Nova Versão Publicada!**",
+            "content": "<@&1130581176290123866> 🚀 **Nova Versão Publicada!** (v${{ env.VERSION }})",
             "embeds": [{
-              "title": "🚀 Nova Versão Publicada!",
-              "description": "A nova versão da extensão **Flex Theme** já está disponível!",
+              "title": "🚀 Nova Versão Publicada! (v${{ env.VERSION }})",
+              "description": "A nova versão **v${{ env.VERSION }}** da extensão **Flex Theme** já está disponível!",
               "url": "https://marketplace.visualstudio.com/items?itemName=lucaskawatoko.hyperdark",
               "color": 000000,
               "fields": [
@@ -74,3 +100,4 @@ jobs:
               }
             }]
           }' ${{ secrets.WEBHOOK_DISCORD }}
+
