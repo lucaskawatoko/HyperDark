@@ -2,7 +2,7 @@
   "name": "hyperdark",
   "displayName": "HyperDark",
   "description": "A VS Code extension that enables a pure black theme with high-contrast colors.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
@@ -78,7 +78,7 @@
         },
         "hyperdark.statusBarTooltip": {
           "type": "string",
-          "default": "Clique para ativar o tema HyperDark",
+          "default": "Seu Melhor Tema do VS Code",
           "description": "Texto exibido ao passar o mouse sobre a Status Bar.",
           "category": "Status Bar",
           "order": 4
