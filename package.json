@@ -2,7 +2,7 @@
   "name": "hyperdark",
   "displayName": "HyperDark",
   "description": "A VS Code extension that enables a pure black theme with high-contrast colors.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
@@ -28,7 +28,6 @@
     "theme",
     "dark",
     "light",
-    "pastel",
     "high-contrast",
     "customization",
     "vscode"
@@ -52,11 +51,10 @@
         "hyperdark.selectedTheme": {
           "type": "string",
           "default": "dark",
-          "enum": ["dark", "light", "pastel"],
+          "enum": ["dark", "light"],
           "enumDescriptions": [
             "Tema escuro",
-            "Tema claro",
-            "Tema pastel"
+            "Tema claro"
           ],
           "description": "Escolha o tema do HyperDark.",
           "category": "Theme",

@@ -1,7 +1,6 @@
 const vscode = require("vscode");
 const darkThemeColors = require("./colors/color_dark");
 const lightThemeColors = require("./colors/color_ligth");
-const pastelThemeColors = require("./colors/color_pastel");
 
 class ColorThemeManager {
     constructor() {
@@ -48,8 +47,6 @@ class ColorThemeManager {
 
         if (selectedTheme === "light") {
             return lightThemeColors;
-        } else if (selectedTheme === "pastel") {
-            return pastelThemeColors;
         } else {
             return darkThemeColors; // Fallback para "dark" caso o valor seja inválido
         }
