@@ -1,48 +1,125 @@
 const vscode = require("vscode");
-const StatusBarManager = require("./src/statusBarManager"); // Importa o gerenciador da Status Bar
-const Reload = require("./src/reload"); // Importa o arquivo de recarregar o VSCode
-const Color = require("./src/colorTheme"); // Importa o arquivo de configuração de cores
+const fs = require("fs");
+const path = require("path");
 
-let statusBarManager;
+const StatusBarManager = require("./src/statusBarManager");
+const Reload = require("./src/reload");
+const Color = require("./src/colorTheme");
 
 /**
- * Função chamada quando a extensão é ativada
- * @param {vscode.ExtensionContext} context
+ * 🧱 Classe que aplica o ícone bloqueado nos arquivos .env reais
  */
-function activate(context) {
-    console.log("HyperDark extension is now active!");
+class EnvDecorationProvider {
+    constructor(context) {
+        this._emitter = new vscode.EventEmitter();
+        this.onDidChangeFileDecorations = this._emitter.event;
 
-    // Inicializa o gerenciador da Status Bar
-    statusBarManager = new StatusBarManager();
-    context.subscriptions.push(statusBarManager);
+        // Caminho absoluto do ícone
+        this.iconPath = vscode.Uri.joinPath(
+            context.extensionUri,
+            "imgs",
+            "block",
+            "bloqueado.png"
+        );
 
-    // Ativa o comando de recarregar o VSCode
-    Reload.activate(context);
+    }
 
-    // Aplica as configurações de cores
-    Color.activate(context);
+    provideFileDecoration(uri) {
+        const fileName = path.basename(uri.fsPath);
 
-    // Comando para abrir as configurações da extensão no VS Code
-    const openSettingsCommand = vscode.commands.registerCommand("hyperdark.openSettings", () => {
-        vscode.commands.executeCommand("workbench.action.openSettings", "hyperdark");
-    });
-    
-    context.subscriptions.push(openSettingsCommand);
+        const isEnv = fileName.startsWith(".env");
+        const isExample = fileName.match(/example|sample/i);
+
+        // Aplica o ícone só em arquivos .env reais
+        if (isEnv && !isExample) {
+            return {
+                tooltip: "Arquivo .env sensível — commit bloqueado por segurança",
+                propagate: false,
+                color: new vscode.ThemeColor("errorForeground"),
+                badge: "", // sem texto, apenas ícone
+                iconPath: this.iconPath
+            };
+        }
+
+        return null;
+    }
 }
 
 /**
- * Função chamada quando a extensão é desativada
+ * 🧩 Cria o hook Git que impede commits de arquivos .env reais
+ */
+function ensureGitHook() {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) return;
+
+    const workspacePath = workspaceFolders[0].uri.fsPath;
+    const hookPath = path.join(workspacePath, ".git", "hooks", "pre-commit");
+    const hookContent = `#!/bin/bash
+# Impede commits de arquivos .env reais (mas permite .env.example)
+if git diff --cached --name-only | grep -E '\\.env($|[^/])' | grep -v -E 'example|sample' > /dev/null; then
+  echo "🚫 Commit bloqueado: arquivos .env reais não podem ser comitados!"
+  exit 1
+fi
+`;
+
+    try {
+        const gitDir = path.join(workspacePath, ".git");
+        if (!fs.existsSync(gitDir)) return; // não é repo git
+
+        fs.writeFileSync(hookPath, hookContent, "utf8");
+        fs.chmodSync(hookPath, 0o755);
+
+        console.log("✅ Hook de segurança (.env) criado com sucesso!");
+    } catch (error) {
+        console.error("Erro ao criar hook de segurança:", error);
+    }
+}
+
+/**
+ * 🧠 Ativação da extensão
+ */
+function activate(context) {
+    console.log("🔥 HyperDark extension is now active!");
+
+    const statusBarManager = new StatusBarManager();
+    context.subscriptions.push(statusBarManager);
+
+    Reload.activate(context);
+    Color.activate(context);
+
+    // Ativa o decorador de ícones .env
+    const envProvider = new EnvDecorationProvider(context);
+    context.subscriptions.push(
+        vscode.window.registerFileDecorationProvider(envProvider)
+    );
+
+    // Cria o hook git automaticamente
+    ensureGitHook();
+
+    // Comando para abrir configurações da extensão
+    const openSettingsCommand = vscode.commands.registerCommand(
+        "hyperdark.openSettings",
+        () => vscode.commands.executeCommand("workbench.action.openSettings", "hyperdark")
+    );
+    context.subscriptions.push(openSettingsCommand);
+
+    // Aviso se o usuário abrir um .env sensível
+    vscode.workspace.onDidOpenTextDocument((doc) => {
+        const fileName = path.basename(doc.fileName);
+        if (fileName.startsWith(".env") && !fileName.match(/example|sample/i)) {
+            vscode.window.showWarningMessage(
+                "⚠️ Este arquivo .env contém informações sensíveis. Ele não será permitido em commits!"
+            );
+        }
+    });
+}
+
+/**
+ * 🧹 Desativação
  */
 function deactivate() {
-    if (statusBarManager) {
-        statusBarManager.dispose();
-    }
-
     Reload.deactivate();
     Color.deactivate();
 }
 
-module.exports = {
-    activate,
-    deactivate
-};
+module.exports = { activate, deactivate };
