@@ -1,8 +1,8 @@
 {
   "name": "hyperdark",
   "displayName": "HyperDark",
-  "description": "A VS Code extension that enables a pure black theme with high-contrast colors.",
-  "version": "0.0.10",
+  "description": "A VS Code extension that enables a pure black theme with high-contrast colors and an integrated Live Server.",
+  "version": "0.0.11",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
@@ -27,14 +27,16 @@
   "keywords": [
     "theme",
     "dark",
-    "light",
     "high-contrast",
     "customization",
-    "vscode"
+    "live server",
+    "reload"
   ],
   "icon": "imgs/Logo_extensao_Hyper_Dark.png",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:hyperdark.startLiveServer",
+    "onCommand:hyperdark.stopLiveServer"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -44,75 +46,13 @@
         "hyperdark.themeEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Ativa ou desativa o tema HyperDark.",
-          "category": "Theme",
-          "order": 1
+          "description": "Ativa ou desativa o tema HyperDark."
         },
         "hyperdark.selectedTheme": {
           "type": "string",
           "default": "dark",
           "enum": ["dark", "light"],
-          "enumDescriptions": [
-            "Tema escuro",
-            "Tema claro"
-          ],
-          "description": "Escolha o tema do HyperDark.",
-          "category": "Theme",
-          "order": 2
-        },
-        "hyperdark.showClock": {
-          "type": "boolean",
-          "default": true,
-          "description": "Exibe o relógio na Status Bar do VS Code.",
-          "category": "Clock",
-          "order": 5
-        },
-        "hyperdark.statusBarText": {
-          "type": "string",
-          "default": "HyperDark",
-          "description": "Texto exibido na Status Bar.",
-          "category": "Status Bar",
-          "order": 3
-        },
-        "hyperdark.statusBarTooltip": {
-          "type": "string",
-          "default": "Seu Melhor Tema do VS Code",
-          "description": "Texto exibido ao passar o mouse sobre a Status Bar.",
-          "category": "Status Bar",
-          "order": 4
-        },
-        "hyperdark.statusBarEmoji": {
-          "type": "string",
-          "default": "$(paintcan)",
-          "enum": [
-            "$(paintcan)",
-            "$(flame)",
-            "$(zap)",
-            "$(rocket)",
-            "$(check)",
-            "$(eye)",
-            "$(heart)",
-            "$(gear)",
-            "$(smiley)",
-            "$(star)",
-            "$(bug)"
-          ],
-          "enumDescriptions": [
-            "Lata de tinta",
-            "Fogo",
-            "Raio",
-            "Foguete",
-            "Check",
-            "Olho",
-            "Coração",
-            "Engrenagem",
-            "Emoji sorrindo",
-            "Estrela",
-            "Bug"
-          ],
-          "description": "Ícone da Status Bar (selecione um ícone do VS Code ou um emoji).",
-          "category": "Status Bar",
-          "order": 6
+          "description": "Escolha o tema."
         }
       }
     },
@@ -122,24 +62,41 @@
         "title": "Open HyperDark Settings"
       },
       {
-        "command": "hyperdark.toggleTheme",
-        "title": "Toggle HyperDark Theme"
+        "command": "hyperdark.startLiveServer",
+        "title": "HyperDark: Start Live Server"
+      },
+      {
+        "command": "hyperdark.stopLiveServer",
+        "title": "HyperDark: Stop Live Server"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "hyperdark.startLiveServer",
+          "group": "navigation",
+          "when": "resourceExtname == .html"
+        },
+        {
+          "command": "hyperdark.stopLiveServer",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
-    "test": "vscode-test",
-    "watch:tsc": "tsc --watch",
-    "watch:esbuild": "esbuild src/extension.js --bundle --outfile=dist/extension.js --watch"
+    "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.60.0",
-    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "eslint": "^9.21.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@types/vscode": "^1.60.0",
+    "eslint": "^9.21.0"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "open": "^11.0.0",
+    "ws": "^8.18.3"
   }
 }
