@@ -1,49 +1,37 @@
 const vscode = require("vscode");
 const path = require("path");
-const open = require("open"); // Dependência declarada no seu package.json
-
-// Gerenciadores da extensão
 const StatusBarManager = require("./src/statusBarManager");
 const Reload = require("./src/reload");
 const Color = require("./src/colorTheme");
 const LiveServer = require("./src/liveServer");
-
 let statusBarManager;
-
 /**
  * Ativação da extensão
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
     console.log("HyperDark extension is now active!");
-
     // --- Status Bar ---
     statusBarManager = new StatusBarManager();
     context.subscriptions.push(statusBarManager);
-
     // --- Reload VS Code ---
     Reload.activate(context);
-
     // --- Tema e Cores ---
     Color.activate(context);
-
     // --- Abrir configurações ---
     const openSettingsCommand = vscode.commands.registerCommand("hyperdark.openSettings", () => {
         vscode.commands.executeCommand("workbench.action.openSettings", "hyperdark");
     });
     context.subscriptions.push(openSettingsCommand);
-
     // --- Comando: Iniciar Live Server ---
     // O argumento 'fileUri' vem automaticamente quando você clica com botão direito no arquivo
     const startServerCommand = vscode.commands.registerCommand("hyperdark.startLiveServer", async (fileUri) => {
         
         let serverRoot = "";
         let relativeFilePath = "";
-
         // 1. Verifica se o comando veio pelo Menu de Contexto (clique direito no arquivo)
         if (fileUri && fileUri.fsPath) {
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
-
             if (workspaceFolder) {
                 // O arquivo está dentro de um projeto aberto no VS Code
                 serverRoot = workspaceFolder.uri.fsPath;
@@ -65,28 +53,39 @@ function activate(context) {
                 return;
             }
         }
-
         // Inicia o servidor na pasta raiz identificada
         LiveServer.startServer(serverRoot, 5500);
-
         // Ajusta barras invertidas (Windows) para barras normais de URL
         // ex: "pasta\arquivo.html" vira "pasta/arquivo.html"
         const urlPath = relativeFilePath.split(path.sep).join("/");
         const fullUrl = `http://localhost:5500/${urlPath}`;
-
+        
         vscode.window.showInformationMessage(`HyperDark Live Server iniciado: ${fullUrl}`);
-
-        // Abre o navegador padrão automaticamente
+        
+        // --- INÍCIO DA MUDANÇA (Melhorando a abertura do navegador) ---
         try {
-            await open(fullUrl);
+            // Tenta abrir o navegador usando a API nativa do VS Code (Mais confiável)
+            await vscode.env.openExternal(vscode.Uri.parse(fullUrl));
         } catch (error) {
-            console.error("Erro ao abrir navegador:", error);
-            vscode.window.showErrorMessage("O servidor iniciou, mas não foi possível abrir o navegador automaticamente.");
+            console.error("Erro ao tentar abrir navegador (vscode.env.openExternal):", error);
+            
+            // Se falhar, exibe uma mensagem com opção para o usuário copiar o link
+            const copyAction = "Copiar Link";
+            vscode.window.showErrorMessage(
+                "O servidor iniciou, mas não foi possível abrir o navegador automaticamente.",
+                copyAction
+            ).then(selection => {
+                if (selection === copyAction) {
+                    // Copia a URL para a área de transferência do usuário
+                    vscode.env.clipboard.writeText(fullUrl);
+                    vscode.window.showInformationMessage(`URL copiada: ${fullUrl}`);
+                }
+            });
         }
+        // --- FIM DA MUDANÇA ---
+
     });
-
     context.subscriptions.push(startServerCommand);
-
     // --- Comando: Parar Live Server ---
     const stopServerCommand = vscode.commands.registerCommand("hyperdark.stopLiveServer", () => {
         LiveServer.stopServer();
@@ -94,7 +93,6 @@ function activate(context) {
     });
     context.subscriptions.push(stopServerCommand);
 }
-
 /**
  * Desativação da extensão
  */
@@ -106,7 +104,6 @@ function deactivate() {
     Color.deactivate();
     LiveServer.stopServer();
 }
-
 module.exports = {
     activate,
     deactivate
