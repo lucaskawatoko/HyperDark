@@ -76,7 +76,9 @@ const darkThemeColors = {
     "editorGutter.deletedBackground": "#ff0000",
     "scrollbarSlider.background": "#272727",
     "scrollbarSlider.hoverBackground": "#555555",
-    "scrollbarSlider.activeBackground": "#777777"
+    "editor.lineHighlightBorder": "#FFFFFF30",
+    "scrollbarSlider.activeBackground": "#777777",
+    "editorCursor.foreground": "#FFFFFF", // <--- Adicione isso
 };
 
 module.exports = darkThemeColors;

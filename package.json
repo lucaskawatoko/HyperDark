@@ -1,8 +1,8 @@
 {
   "name": "hyperdark",
   "displayName": "HyperDark",
-  "description": "A VS Code extension that enables a pure black theme with high-contrast colors and an integrated Live Server.",
-  "version": "0.0.13",
+  "description": "The ultimate Cyberpunk environment for Web Developers. Includes Neon Theme, Live Server, Smart Clock, CSS Tools, and more.",
+  "version": "1.0.0",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
@@ -19,24 +19,29 @@
   "bugs": {
     "url": "https://github.com/lucaskawatoko/HyperDark/issues"
   },
-  "homepage": "https://github.com/lucaskawatoko/HyperDark",
   "categories": [
     "Themes",
-    "Visualization"
+    "Visualization",
+    "Programming Languages",
+    "Other"
   ],
   "keywords": [
     "theme",
     "dark",
-    "high-contrast",
-    "customization",
     "live server",
-    "reload"
+    "php",
+    "css",
+    "clock",
+    "pomodoro"
   ],
   "icon": "imgs/Logo_extensao_Hyper_Dark.png",
   "activationEvents": [
     "onStartupFinished",
     "onCommand:hyperdark.startLiveServer",
-    "onCommand:hyperdark.stopLiveServer"
+    "onCommand:hyperdark.stopLiveServer",
+    "onCommand:hyperdark.toggleGlow",
+    "onCommand:hyperdark.clockAction",
+    "onCommand:hyperdark.insertNeonLog"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -46,28 +51,170 @@
         "hyperdark.themeEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Ativa ou desativa o tema HyperDark."
+          "description": "Ativa o tema visual HyperDark."
+        },
+        "hyperdark.enableGlow": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ativa o efeito de brilho neon (glow) ao redor das cores detectadas."
+        },
+        "hyperdark.opacity": {
+          "type": "number",
+          "default": 0.15,
+          "enum": [
+            0.05,
+            0.15,
+            0.3,
+            0.5,
+            0.8,
+            1.0
+          ],
+          "enumDescriptions": [
+            "Ultra Sutil (5%) - Quase invisível",
+            "Vidro Padrão (15%) - Recomendado",
+            "Vidro Forte (30%) - Mais destaque",
+            "Meio a Meio (50%) - Bastante cor",
+            "Intenso (80%) - Quase sólido",
+            "Sólido (100%) - Sem transparência"
+          ],
+          "description": "Escolha a intensidade do efeito de vidro no fundo da cor."
+        },
+        "hyperdark.enablePxToRem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ativa o conversor automático de PX para REM ao passar o mouse."
+        },
+        "hyperdark.enableVariableMatching": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ativa a detecção inteligente de variáveis CSS (--var) e SASS ($var)."
+        },
+        "hyperdark.showClock": {
+          "type": "boolean",
+          "default": true,
+          "description": "Exibe o relógio digital e cronômetro na barra de status."
+        },
+        "hyperdark.liveServerPort": {
+          "type": "number",
+          "default": 5500,
+          "description": "Define a porta preferencial para o Live Server (ex: 5500, 8080)."
+        },
+        "hyperdark.cursorStyle": {
+          "type": "string",
+          "default": "line",
+          "enum": [
+            "line",
+            "block",
+            "underline",
+            "line-thin",
+            "block-outline",
+            "underline-thin"
+          ],
+          "enumDescriptions": [
+            "Linha Vertical (|)",
+            "Bloco Cheio (█)",
+            "Sublinhado (_)",
+            "Linha Fina",
+            "Contorno do Bloco",
+            "Sublinhado Fino"
+          ],
+          "description": "Escolha o formato do cursor."
+        },
+        "hyperdark.cursorBlinking": {
+          "type": "string",
+          "default": "expand",
+          "enum": [
+            "blink",
+            "smooth",
+            "phase",
+            "expand",
+            "solid"
+          ],
+          "enumDescriptions": [
+            "Piscar Seco (Padrão)",
+            "Suave (Fade in/out)",
+            "Fase (Retrô)",
+            "Expandir (Respiração)",
+            "Sólido (Não pisca)"
+          ],
+          "description": "Escolha como o cursor deve piscar."
+        },
+        "hyperdark.cursorSmoothAnimation": {
+          "type": "string",
+          "default": "on",
+          "enum": ["on", "off", "explicit"],
+          "description": "Ativa a animação suave de movimento do cursor"
         },
         "hyperdark.selectedTheme": {
           "type": "string",
           "default": "dark",
-          "enum": ["dark", "light"],
-          "description": "Escolha o tema."
+          "enum": [
+            "dark",
+            "light"
+          ],
+          "enumDescriptions": [
+            "HyperDark Clássico (Preto Puro)",
+            "Tema Claro"
+          ],
+          "description": "Escolha o tema visual da extensão."
         }
+      }
+    },
+    "configurationDefaults": {
+      "[html]": {
+        "editor.linkedEditing": true
+      },
+      "[xml]": {
+        "editor.linkedEditing": true
+      },
+      "[php]": {
+        "editor.linkedEditing": true
+      },
+      "[javascriptreact]": {
+        "editor.linkedEditing": true
+      },
+      "[typescriptreact]": {
+        "editor.linkedEditing": true
       }
     },
     "commands": [
       {
         "command": "hyperdark.openSettings",
-        "title": "Open HyperDark Settings"
+        "title": "HyperDark: Open Settings"
       },
       {
         "command": "hyperdark.startLiveServer",
-        "title": "HyperDark: Start Live Server"
+        "title": "Start HyperServer"
       },
       {
         "command": "hyperdark.stopLiveServer",
-        "title": "HyperDark: Stop Live Server"
+        "title": "Stop HyperServer"
+      },
+      {
+        "command": "hyperdark.toggleGlow",
+        "title": "HyperDark: Toggle Neon Effect"
+      },
+      {
+        "command": "hyperdark.clockAction",
+        "title": "HyperDark: Focus Timer"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "hyperdark.startLiveServer",
+        "key": "alt+l",
+        "mac": "opt+l",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "hyperdark.stopLiveServer",
+        "key": "alt+q",
+        "mac": "opt+q"
+      },
+      {
+        "command": "hyperdark.toggleGlow",
+        "key": "alt+g",
+        "mac": "opt+g"
       }
     ],
     "menus": {
@@ -80,6 +227,13 @@
         {
           "command": "hyperdark.stopLiveServer",
           "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "hyperdark.insertNeonLog",
+          "group": "hyperdark-group@1",
+          "when": "editorHasSelection || editorTextFocus"
         }
       ]
     }
