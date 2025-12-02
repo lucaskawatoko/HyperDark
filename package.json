@@ -1,8 +1,8 @@
 {
   "name": "hyperdark",
   "displayName": "HyperDark",
-  "description": "The ultimate Cyberpunk environment for Web Developers. Includes Neon Theme, Live Server, Smart Clock, CSS Tools, and more.",
-  "version": "1.0.0",
+  "description": "A melhor e mais completa extensão VSCode para desenvolvedores que amam temas escuros! Inclui tema personalizado, servidor local, relógio na barra de status, conversor PX para REM e muito mais.",
+  "version": "1.0.1",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
@@ -40,19 +40,20 @@
     "onCommand:hyperdark.startLiveServer",
     "onCommand:hyperdark.stopLiveServer",
     "onCommand:hyperdark.toggleGlow",
-    "onCommand:hyperdark.clockAction",
-    "onCommand:hyperdark.insertNeonLog"
+    "onCommand:hyperdark.clockAction"
   ],
   "main": "./extension.js",
   "contributes": {
+    "themes": [
+      {
+        "label": "HyperDark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/hyperdark-color-theme.json"
+      }
+    ],
     "configuration": {
       "title": "HyperDark Settings",
       "properties": {
-        "hyperdark.themeEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Ativa o tema visual HyperDark."
-        },
         "hyperdark.enableGlow": {
           "type": "boolean",
           "default": true,
@@ -142,21 +143,12 @@
         "hyperdark.cursorSmoothAnimation": {
           "type": "string",
           "default": "on",
-          "enum": ["on", "off", "explicit"],
-          "description": "Ativa a animação suave de movimento do cursor"
-        },
-        "hyperdark.selectedTheme": {
-          "type": "string",
-          "default": "dark",
           "enum": [
-            "dark",
-            "light"
+            "on",
+            "off",
+            "explicit"
           ],
-          "enumDescriptions": [
-            "HyperDark Clássico (Preto Puro)",
-            "Tema Claro"
-          ],
-          "description": "Escolha o tema visual da extensão."
+          "description": "Ativa a animação suave de movimento do cursor"
         }
       }
     },
@@ -227,13 +219,6 @@
         {
           "command": "hyperdark.stopLiveServer",
           "group": "navigation"
-        }
-      ],
-      "editor/context": [
-        {
-          "command": "hyperdark.insertNeonLog",
-          "group": "hyperdark-group@1",
-          "when": "editorHasSelection || editorTextFocus"
         }
       ]
     }
