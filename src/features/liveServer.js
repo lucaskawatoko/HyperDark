@@ -1,7 +1,10 @@
+// src/features/liveServer.js
+
 const vscode = require("vscode");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const os = require("os"); // Necessário para descobrir o IP
 const chokidar = require("chokidar");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -12,18 +15,43 @@ let server;
 let wss;
 let watcher;
 
+// --- UTILS: Descobre o IP da máquina na rede local ---
+function getLocalExternalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const devName in interfaces) {
+        const iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            const alias = iface[i];
+            // Busca IPv4 que não seja interno (127.0.0.1)
+            if (alias.family === 'IPv4' && !alias.internal) {
+                return alias.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
 function injectReloadScript(htmlContent, wsPort) {
+    // O script agora usa window.location.hostname. 
+    // Isso garante que se abrir no celular (192.168.x.x), o socket conecta no IP correto.
     const script = `
         <script>
             (function() {
-                console.log("[HyperDark] Live Server na porta ${wsPort}...");
-                const ws = new WebSocket("ws://localhost:${wsPort}");
+                console.log("[HyperDark] Live Server ativo...");
+                const protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                const address = protocol + window.location.hostname + ":${wsPort}";
+                const ws = new WebSocket(address);
+                
                 ws.onmessage = (event) => {
                     if (event.data === "reload") location.reload();
                 };
+                
+                ws.onopen = () => console.log("[HyperDark] Conectado ao Hot Reload.");
+                ws.onclose = () => console.log("[HyperDark] Desconectado.");
             })();
         </script>
     `;
+    
     if (htmlContent.includes("</body>")) {
         return htmlContent.replace("</body>", script + "</body>");
     }
@@ -43,28 +71,54 @@ async function startServer(directory, desiredPort = 5500) {
 
         fs.readFile(filePath, (err, data) => {
             if (err) {
-                res.writeHead(404);
-                res.end("404 - Not Found (HyperDark)");
-                return;
+                // Tenta achar index.html se for uma pasta
+                if (err.code === 'EISDIR') {
+                    const indexInDir = path.join(filePath, "index.html");
+                    if (fs.existsSync(indexInDir)) {
+                        filePath = indexInDir;
+                        // Relê o arquivo agora que sabemos que é o index
+                        data = fs.readFileSync(filePath); 
+                        // Continua o fluxo abaixo...
+                    } else {
+                        res.writeHead(404);
+                        res.end("404 - Folder listing not allowed (HyperDark)");
+                        return;
+                    }
+                } else {
+                    res.writeHead(404);
+                    res.end("404 - Not Found (HyperDark)");
+                    return;
+                }
             }
 
+            // Se chegou aqui, temos 'data' (conteúdo do arquivo)
             const ext = path.extname(filePath).toLowerCase();
             if (ext === ".html" || ext === ".htm") {
                 const html = data.toString("utf8");
                 res.writeHead(200, { "Content-Type": "text/html" });
                 res.end(injectReloadScript(html, wsPort));
             } else {
-                const mimes = { ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".json": "application/json" };
+                const mimes = { 
+                    ".css": "text/css", 
+                    ".js": "text/javascript", 
+                    ".png": "image/png", 
+                    ".jpg": "image/jpeg", 
+                    ".svg": "image/svg+xml", 
+                    ".json": "application/json",
+                    ".ico": "image/x-icon"
+                };
                 res.writeHead(200, { "Content-Type": mimes[ext] || "application/octet-stream" });
                 res.end(data);
             }
         });
     });
 
-    server.listen(httpPort);
+    // '0.0.0.0' permite que outros dispositivos na rede acessem
+    server.listen(httpPort, '0.0.0.0');
 
     try {
-        wss = new WebSocketServer({ port: wsPort });
+        // WebSocket também precisa escutar em 0.0.0.0
+        wss = new WebSocketServer({ port: wsPort, host: '0.0.0.0' });
     } catch (error) {
         console.error("Erro WebSocket:", error);
     }
@@ -88,6 +142,7 @@ function stopServer() {
 }
 
 // --- ATIVAÇÃO ---
+// --- ATIVAÇÃO (Substitua essa parte no src/features/liveServer.js) ---
 function activate(context) {
     
     const startCommand = vscode.commands.registerCommand("hyperdark.startLiveServer", async (fileUri) => {
@@ -96,7 +151,7 @@ function activate(context) {
         }
 
         if (!fileUri) {
-            vscode.window.showErrorMessage("Abra um arquivo HTML para iniciar.");
+            vscode.window.showErrorMessage("Abra um arquivo ou pasta para iniciar.");
             return;
         }
 
@@ -115,14 +170,31 @@ function activate(context) {
         try {
             vscode.window.setStatusBarMessage("Iniciando HyperDark Server...", 2000);
             
-            // CORRIGIDO: Chama a função direto, sem "LiveServer." antes
             const realPort = await startServer(root, port);
+            const localIP = getLocalExternalIP();
             
+            // Corrige barras invertidas do Windows para URL
             const urlPath = relative.split(path.sep).join("/");
-            const fullUrl = `http://localhost:${realPort}/${urlPath}`;
             
-            vscode.window.showInformationMessage(`HyperDark Live: ${fullUrl}`);
-            await vscode.env.openExternal(vscode.Uri.parse(fullUrl));
+            const localUrl = `http://localhost:${realPort}/${urlPath}`;
+            const networkUrl = `http://${localIP}:${realPort}/${urlPath}`; // <--- URL COM IP
+            
+            // Botão para copiar o link (Opcional: Mostra as duas opções)
+            vscode.window.showInformationMessage(
+                `HyperDark: Server rodando em ${localIP}:${realPort}`, 
+                "Copiar Link", 
+                "Parar"
+            ).then(selection => {
+                if (selection === "Copiar Link") {
+                    vscode.env.clipboard.writeText(networkUrl);
+                } else if (selection === "Parar") {
+                    stopServer();
+                }
+            });
+
+            // --- A MUDANÇA ESTÁ AQUI ---
+            // Antes estava localUrl, agora mudamos para networkUrl
+            await vscode.env.openExternal(vscode.Uri.parse(networkUrl));
 
         } catch (err) {
             vscode.window.showErrorMessage(`Erro: ${err.message}`);
@@ -130,8 +202,8 @@ function activate(context) {
     });
 
     const stopCommand = vscode.commands.registerCommand("hyperdark.stopLiveServer", () => {
-        stopServer(); // Chama direto
-        vscode.window.showInformationMessage("Servidor Parado.");
+        stopServer();
+        vscode.window.setStatusBarMessage("HyperDark Server Parado.", 3000);
     });
 
     context.subscriptions.push(startCommand);
