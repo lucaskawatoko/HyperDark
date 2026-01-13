@@ -2,7 +2,7 @@
   "name": "hyperdark",
   "displayName": "HyperDark",
   "description": "A melhor e mais completa extensão VSCode para desenvolvedores que amam temas escuros! Inclui tema personalizado, servidor local, relógio na barra de status, conversor PX para REM e muito mais.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "lucaskawatoko",
   "license": "MIT",
   "author": {
